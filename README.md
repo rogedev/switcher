@@ -4,10 +4,22 @@ A free, open-source window switcher for macOS. Press **Option+Tab** to see all y
 
 ## Installation
 
-1. Download the latest release from [Releases](https://github.com/yourusername/switcher/releases)
-2. Drag **Switcher.app** to your Applications folder
-3. Open Switcher — it will appear as an icon in your menu bar
-4. Grant the permissions it asks for (see below)
+1. Download the latest release from [Releases](https://github.com/rogedev/switcher/releases)
+2. Unzip it and drag **Switcher.app** to your **Applications** folder
+3. **First launch — clear the macOS security warning.** Switcher is open-source and isn't
+   signed with a paid Apple Developer certificate, so on first open macOS Gatekeeper shows
+   *"Apple could not verify Switcher is free of malware…"*. Remove the download quarantine
+   flag once and it opens normally from then on:
+
+   ```bash
+   xattr -dr com.apple.quarantine /Applications/Switcher.app
+   ```
+
+   Then open Switcher from Applications. _Alternatively:_ try to open it, then go to
+   **System Settings → Privacy & Security**, scroll to the *Security* section, and click
+   **"Open Anyway"**.
+4. Switcher appears as an icon in your menu bar
+5. Grant the permissions it asks for (see below)
 
 ## Permissions
 

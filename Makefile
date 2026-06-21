@@ -9,6 +9,8 @@ build:
 		-scheme Switcher \
 		-configuration Release \
 		-derivedDataPath $(DERIVED_DATA) \
+		ARCHS="arm64 x86_64" \
+		ONLY_ACTIVE_ARCH=NO \
 		CODE_SIGN_IDENTITY="-" \
 		CODE_SIGNING_ALLOWED=YES
 

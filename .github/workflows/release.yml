@@ -1,0 +1,42 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Build
+        run: |
+          xcodebuild -project Switcher.xcodeproj \
+            -scheme Switcher \
+            -configuration Release \
+            -derivedDataPath DerivedData \
+            CODE_SIGN_IDENTITY="-" \
+            CODE_SIGNING_ALLOWED=YES
+
+      - name: Package
+        run: |
+          APP_PATH="DerivedData/Build/Products/Release/Switcher.app"
+          codesign --force --deep --sign - "$APP_PATH"
+          ditto -c -k --keepParent "$APP_PATH" Switcher.zip
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: Switcher.zip
+          generate_release_notes: true

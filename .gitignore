@@ -9,6 +9,7 @@ DerivedData/
 
 # Build
 build/
+Switcher.zip
 
 # macOS
 .DS_Store

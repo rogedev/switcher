@@ -7,6 +7,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
   private var switcherPanel: SwitcherPanel!
   private var switcherView: SwitcherView!
   private var previousApp: NSRunningApplication?
+  private var hotkeyRetryTimer: Timer?
+  private var didRequestScreenRecording = false
 
   func applicationDidFinishLaunching(_ notification: Notification) {
     windowManager = WindowManager()
@@ -21,8 +23,19 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     statusBar.onQuit = {
       NSApp.terminate(nil)
     }
+    statusBar.onSetModifier = { [weak self] modifier in
+      Settings.hotkeyModifier = modifier
+      self?.hotkey.modifier = modifier
+    }
+    statusBar.onSetDisplayMode = { [weak self] mode in
+      Settings.displayMode = mode
+      if mode == .preview {
+        self?.requestScreenRecordingIfNeeded()
+      }
+    }
 
     hotkey = GlobalHotkey()
+    hotkey.modifier = Settings.hotkeyModifier
     hotkey.onActivate = { [weak self] in
       self?.showSwitcher()
     }
@@ -40,14 +53,19 @@ class AppDelegate: NSObject, NSApplicationDelegate {
       self?.hideSwitcher(focusWindow: nil)
     }
 
-    hotkey.register()
-
     if !Permissions.checkAccessibility() {
       Permissions.ensureAccessibility()
     }
 
-    if !Permissions.checkScreenRecording() {
-      Permissions.requestScreenRecording()
+
+    if !hotkey.register() {
+      hotkeyRetryTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) {
+        [weak self] timer in
+        if self?.hotkey.register() == true {
+          timer.invalidate()
+          self?.hotkeyRetryTimer = nil
+        }
+      }
     }
   }
 
@@ -59,13 +77,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     previousApp = NSWorkspace.shared.frontmostApplication
 
-    let windows = windowManager.getWindows()
+    let displayMode = Settings.displayMode
+    let windows = windowManager.getWindows(displayMode: displayMode)
     guard !windows.isEmpty else { return }
 
-    switcherView.update(windows: windows)
+    switcherView.update(windows: windows, displayMode: displayMode)
     switcherView.selectIndex(0)
 
-    if #available(macOS 14.0, *) {
+    if displayMode == .preview, #available(macOS 14.0, *) {
       for (i, window) in windows.enumerated() where window.thumbnail == nil {
         ThumbnailCapture.captureAsync(windowID: window.windowID) { [weak self] image in
           guard let image else { return }
@@ -107,6 +126,42 @@ class AppDelegate: NSObject, NSApplicationDelegate {
       prev.activate()
     }
     previousApp = nil
+  }
+
+  // Screen Recording is only needed for previews.
+  private func requestScreenRecordingIfNeeded() {
+    if Permissions.checkScreenRecording() { return }
+
+    if didRequestScreenRecording {
+      promptRelaunchForPreviews()
+      return
+    }
+
+    didRequestScreenRecording = true
+    Permissions.requestScreenRecording()
+  }
+
+  private func promptRelaunchForPreviews() {
+    let alert = NSAlert()
+    alert.messageText = "Relaunch to enable Window Previews"
+    alert.informativeText =
+      "Enable Switcher under Screen & System Audio Recording in System Settings, "
+      + "then relaunch Switcher for previews to take effect."
+    alert.addButton(withTitle: "Relaunch Now")
+    alert.addButton(withTitle: "Later")
+    NSApp.activate(ignoringOtherApps: true)
+
+    if alert.runModal() == .alertFirstButtonReturn {
+      relaunch()
+    }
+  }
+
+  private func relaunch() {
+    let config = NSWorkspace.OpenConfiguration()
+    config.createsNewApplicationInstance = true
+    NSWorkspace.shared.openApplication(at: Bundle.main.bundleURL, configuration: config) { _, _ in
+      DispatchQueue.main.async { NSApp.terminate(nil) }
+    }
   }
 
   private func screenWithMouse() -> NSScreen {

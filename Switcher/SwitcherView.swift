@@ -8,12 +8,14 @@ class SwitcherView: NSView {
   private var tileViews: [WindowTileView] = []
   private var windows: [WindowInfo] = []
   private var selectedIndex = 0
-
-  private let tileWidth: CGFloat = 220
-  private let tileHeight: CGFloat = 172
-  private let tileGap: CGFloat = 10
-  private let panelPadding: CGFloat = 20
-  private let cornerRadius: CGFloat = 12
+  private var displayMode: DisplayMode = .preview
+  private var tileWidth: CGFloat { displayMode == .icon ? 132 : 220 }
+  private var tileHeight: CGFloat { displayMode == .icon ? 132 : 172 }
+  private var tileGap: CGFloat { displayMode == .icon ? 4 : 10 }
+  private var panelPadding: CGFloat { displayMode == .icon ? 24 : 20 }
+  private var panelCornerRadius: CGFloat { displayMode == .icon ? 28 : 12 }
+  private let iconTitleHeight: CGFloat = 30
+  private let selectionTitleLabel = NSTextField(labelWithString: "")
 
   var selectedWindow: WindowInfo? {
     guard selectedIndex >= 0, selectedIndex < windows.count else { return nil }
@@ -38,18 +40,35 @@ class SwitcherView: NSView {
     effectView.blendingMode = .behindWindow
     effectView.state = .active
     effectView.wantsLayer = true
-    effectView.layer?.cornerRadius = cornerRadius
+    effectView.layer?.cornerRadius = panelCornerRadius
+    effectView.layer?.cornerCurve = .continuous
+    effectView.layer?.borderWidth = 1
+    effectView.layer?.borderColor = NSColor(white: 1, alpha: 0.16).cgColor
     effectView.layer?.masksToBounds = true
     addSubview(effectView)
+
+    selectionTitleLabel.font = .systemFont(ofSize: 13, weight: .semibold)
+    selectionTitleLabel.textColor = .labelColor
+    selectionTitleLabel.alignment = .center
+    selectionTitleLabel.lineBreakMode = .byTruncatingTail
+    selectionTitleLabel.maximumNumberOfLines = 1
+    selectionTitleLabel.cell?.truncatesLastVisibleLine = true
+    selectionTitleLabel.isBezeled = false
+    selectionTitleLabel.isEditable = false
+    selectionTitleLabel.drawsBackground = false
+    selectionTitleLabel.isHidden = true
+    effectView.addSubview(selectionTitleLabel)
   }
 
   override var acceptsFirstResponder: Bool { true }
 
-  func update(windows: [WindowInfo]) {
+  func update(windows: [WindowInfo], displayMode: DisplayMode) {
     self.windows = windows
+    self.displayMode = displayMode
+    effectView.layer?.cornerRadius = panelCornerRadius
     tileViews.forEach { $0.removeFromSuperview() }
     tileViews = windows.map { window in
-      let tile = WindowTileView(windowInfo: window)
+      let tile = WindowTileView(windowInfo: window, displayMode: displayMode)
       tile.onClick = { [weak self] in
         guard let self else { return }
         if let idx = self.tileViews.firstIndex(of: tile) {
@@ -60,6 +79,7 @@ class SwitcherView: NSView {
       effectView.addSubview(tile)
       return tile
     }
+    selectionTitleLabel.isHidden = displayMode != .icon
     needsLayout = true
   }
 
@@ -73,7 +93,10 @@ class SwitcherView: NSView {
     let rows = Int(ceil(Double(count) / Double(cols)))
 
     let width = CGFloat(cols) * tileWidth + CGFloat(max(0, cols - 1)) * tileGap + 2 * panelPadding
-    let height = CGFloat(rows) * tileHeight + CGFloat(max(0, rows - 1)) * tileGap + 2 * panelPadding
+    var height = CGFloat(rows) * tileHeight + CGFloat(max(0, rows - 1)) * tileGap + 2 * panelPadding
+    if displayMode == .icon {
+      height += iconTitleHeight
+    }
 
     return NSSize(width: width, height: height)
   }
@@ -95,6 +118,15 @@ class SwitcherView: NSView {
       let y = bounds.height - panelPadding - CGFloat(row + 1) * tileHeight - CGFloat(row) * tileGap
       tile.frame = NSRect(x: x, y: y, width: tileWidth, height: tileHeight)
     }
+
+    if displayMode == .icon {
+      selectionTitleLabel.frame = NSRect(
+        x: panelPadding,
+        y: panelPadding / 2,
+        width: bounds.width - 2 * panelPadding,
+        height: iconTitleHeight
+      )
+    }
   }
 
   func updateThumbnail(at index: Int, image: NSImage) {
@@ -108,6 +140,9 @@ class SwitcherView: NSView {
     tileViews[safe: selectedIndex]?.isSelected = false
     selectedIndex = clamped
     tileViews[safe: selectedIndex]?.isSelected = true
+    if displayMode == .icon {
+      selectionTitleLabel.stringValue = windows[selectedIndex].title
+    }
   }
 
   func cycleSelection(forward: Bool) {

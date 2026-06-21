@@ -1,6 +1,6 @@
 # Switcher
 
-A free, open-source window switcher for macOS. Press **Option+Tab** to see all your open windows and quickly switch between them.
+A free, open-source window switcher for macOS.
 
 ## Installation
 
@@ -23,14 +23,32 @@ A free, open-source window switcher for macOS. Press **Option+Tab** to see all y
 
 ## Permissions
 
-Switcher needs two macOS permissions to work:
+| Permission | Why | When it's asked |
+|---|---|---|
+| **Accessibility** | To open the switcher and to focus/raise windows when you select them | On first launch (required) |
+| **Screen Recording** | To show live window thumbnails and per-window titles | Only when you turn on **Window Previews** |
 
-| Permission | Why |
-|---|---|
-| **Accessibility** | To focus and raise windows when you select them |
-| **Screen Recording** | To show window titles and thumbnail previews |
+By default Switcher runs in **App Icons** mode, which needs no Screen Recording — so on
+first launch you'll only be asked for **Accessibility**. Screen Recording is requested the
+first time you switch to **Window Previews**. After you've granted it, you can flip between
+icons and previews freely with no further prompts.
 
-On first launch, macOS will prompt you to grant these. Go to **System Settings > Privacy & Security** and enable Switcher under both **Accessibility** and **Screen & System Audio Recording**.
+Enable permissions under **System Settings → Privacy & Security**, in the **Accessibility**
+and **Screen & System Audio Recording** sections.
+
+> **Note:** the very first time you grant Screen Recording, macOS may require you to quit and
+> reopen Switcher before previews start rendering. This is a one-time macOS limitation.
+
+## Settings
+
+Open the menu bar icon to configure:
+
+| Setting | Options | Notes |
+|---|---|---|
+| **Shortcut** | `⌥ Tab` (default) · `⌘ Tab` | `⌘ Tab` replaces the built-in macOS app switcher while Switcher is running |
+| **Display** | `App Icons` (default) · `Window Previews` | Previews show live thumbnails and need Screen Recording |
+
+Your choices are remembered between launches.
 
 ## How to Use
 
@@ -42,7 +60,9 @@ On first launch, macOS will prompt you to grant these. Go to **System Settings >
 | **Release ⌥** | Switch to the selected window |
 | **Escape** | Cancel |
 
-Hold Option, tap Tab to cycle through windows, release Option to switch. That's it.
+Hold the modifier, tap Tab to cycle through windows, release the modifier to switch.
+That's it. (If you set the shortcut to **⌘ Tab** in the menu, use Command instead of Option
+throughout.)
 
 ## Building from Source
 

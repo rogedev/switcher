@@ -1,0 +1,32 @@
+name: Switcher
+options:
+  bundleIdPrefix: com.switcher
+  deploymentTarget:
+    macOS: "13.0"
+  xcodeVersion: "16.0"
+  minimumXcodeGenVersion: "2.40"
+
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+    MACOSX_DEPLOYMENT_TARGET: "13.0"
+    CODE_SIGN_IDENTITY: "-"
+    CODE_SIGN_STYLE: Manual
+
+targets:
+  Switcher:
+    type: application
+    platform: macOS
+    sources:
+      - path: Switcher
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.switcher.app
+        INFOPLIST_FILE: Info.plist
+        CODE_SIGN_ENTITLEMENTS: Switcher.entitlements
+        GENERATE_INFOPLIST_FILE: false
+        LD_RUNPATH_SEARCH_PATHS: "@executable_path/../Frameworks"
+        ENABLE_HARDENED_RUNTIME: false
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+    entitlements:
+      path: Switcher.entitlements

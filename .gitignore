@@ -1,0 +1,19 @@
+# Xcode
+*.xcodeproj/
+xcuserdata/
+DerivedData/
+*.moved-aside
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Build
+build/
+
+# macOS
+.DS_Store
+*.swp
+*~
+
+# Claude Code
+.claude/

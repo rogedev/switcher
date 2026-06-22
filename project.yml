@@ -35,3 +35,24 @@ targets:
           ONLY_ACTIVE_ARCH: NO
     entitlements:
       path: Switcher.entitlements
+
+  SwitcherTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: SwitcherTests
+    dependencies:
+      - target: Switcher
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.switcher.tests
+        GENERATE_INFOPLIST_FILE: YES
+
+schemes:
+  Switcher:
+    build:
+      targets:
+        Switcher: all
+    test:
+      targets:
+        - SwitcherTests

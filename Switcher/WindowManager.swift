@@ -10,6 +10,10 @@ struct WindowInfo {
   let bounds: CGRect
   let isMinimized: Bool
   var thumbnail: NSImage?
+  var aspectRatio: CGFloat {
+    guard bounds.width > 0, bounds.height > 0 else { return 1.4 }
+    return bounds.width / bounds.height
+  }
 }
 
 @_silgen_name("_AXUIElementGetWindow")

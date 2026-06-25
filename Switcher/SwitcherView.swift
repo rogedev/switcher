@@ -15,6 +15,10 @@ class SwitcherView: NSView {
   private var panelPadding: CGFloat { displayMode == .icon ? 24 : 20 }
   private var panelCornerRadius: CGFloat { displayMode == .icon ? 28 : 12 }
   private let iconTitleHeight: CGFloat = 30
+  private let previewThumbHeight: CGFloat = 130
+  private let previewInnerPadding: CGFloat = 8
+  private let previewMinTileWidth: CGFloat = 90
+  private let previewMaxTileWidth: CGFloat = 340
   private let selectionTitleLabel = NSTextField(labelWithString: "")
 
   var selectedWindow: WindowInfo? {
@@ -83,20 +87,63 @@ class SwitcherView: NSView {
     needsLayout = true
   }
 
+  private func previewTileWidth(at index: Int) -> CGFloat {
+    let raw = previewThumbHeight * windows[index].aspectRatio + 2 * previewInnerPadding
+    return min(max(raw, previewMinTileWidth), previewMaxTileWidth)
+  }
+
+  private func packPreviewRows(maxContentWidth: CGFloat) -> [[Int]] {
+    var rows: [[Int]] = []
+    var current: [Int] = []
+    var currentWidth: CGFloat = 0
+
+    for i in windows.indices {
+      let w = previewTileWidth(at: i)
+      let projected = current.isEmpty ? w : currentWidth + tileGap + w
+
+      if !current.isEmpty && projected > maxContentWidth {
+        rows.append(current)
+        current = [i]
+        currentWidth = w
+
+      } else {
+        current.append(i)
+        currentWidth = projected
+      }
+    }
+    if !current.isEmpty { rows.append(current) }
+    return rows
+  }
+
+  private func rowWidth(_ row: [Int]) -> CGFloat {
+    let tiles = row.reduce(CGFloat(0)) { $0 + previewTileWidth(at: $1) }
+    return tiles + CGFloat(max(0, row.count - 1)) * tileGap
+  }
+
   func idealSize(for screen: NSScreen) -> NSSize {
     let count = windows.count
     guard count > 0 else { return NSSize(width: 300, height: 200) }
 
     let maxWidth = screen.frame.width * 0.8
+
+    if displayMode != .icon {
+      let rows = packPreviewRows(maxContentWidth: maxWidth - 2 * panelPadding)
+      let widest = rows.map(rowWidth).max() ?? 0
+      let width = widest + 2 * panelPadding
+      let height =
+        CGFloat(rows.count) * tileHeight + CGFloat(max(0, rows.count - 1)) * tileGap
+        + 2 * panelPadding
+      return NSSize(width: width, height: height)
+    }
+
     let maxCols = max(1, Int((maxWidth - 2 * panelPadding + tileGap) / (tileWidth + tileGap)))
     let cols = min(count, maxCols)
     let rows = Int(ceil(Double(count) / Double(cols)))
 
     let width = CGFloat(cols) * tileWidth + CGFloat(max(0, cols - 1)) * tileGap + 2 * panelPadding
-    var height = CGFloat(rows) * tileHeight + CGFloat(max(0, rows - 1)) * tileGap + 2 * panelPadding
-    if displayMode == .icon {
-      height += iconTitleHeight
-    }
+    let height =
+      CGFloat(rows) * tileHeight + CGFloat(max(0, rows - 1)) * tileGap + 2 * panelPadding
+      + iconTitleHeight
 
     return NSSize(width: width, height: height)
   }
@@ -107,6 +154,11 @@ class SwitcherView: NSView {
 
     let count = tileViews.count
     guard count > 0 else { return }
+
+    if displayMode != .icon {
+      layoutPreviewTiles()
+      return
+    }
 
     let availableWidth = bounds.width - 2 * panelPadding
     let cols = max(1, Int((availableWidth + tileGap) / (tileWidth + tileGap)))
@@ -126,6 +178,25 @@ class SwitcherView: NSView {
         width: bounds.width - 2 * panelPadding,
         height: iconTitleHeight
       )
+    }
+  }
+
+  private func layoutPreviewTiles() {
+    let maxContentWidth = bounds.width - 2 * panelPadding
+    let rows = packPreviewRows(maxContentWidth: maxContentWidth)
+
+    for (rowIdx, row) in rows.enumerated() {
+      let width = rowWidth(row)
+      var x = panelPadding + (maxContentWidth - width) / 2
+      let y =
+        bounds.height - panelPadding - CGFloat(rowIdx + 1) * tileHeight
+        - CGFloat(rowIdx) * tileGap
+
+      for tileIndex in row {
+        let w = previewTileWidth(at: tileIndex)
+        tileViews[tileIndex].frame = NSRect(x: x, y: y, width: w, height: tileHeight)
+        x += w + tileGap
+      }
     }
   }
 

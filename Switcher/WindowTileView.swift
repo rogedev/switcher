@@ -78,13 +78,14 @@ class WindowTileView: NSView {
     thumbnailView.wantsLayer = true
     thumbnailView.layer?.cornerRadius = 6
     thumbnailView.layer?.masksToBounds = true
-    thumbnailView.layer?.backgroundColor = NSColor(white: 0.1, alpha: 0.8).cgColor
     addSubview(thumbnailView)
 
     if let thumbnail = windowInfo.thumbnail {
       thumbnailView.image = thumbnail
       largeIconView.isHidden = true
+      thumbnailView.layer?.backgroundColor = NSColor.clear.cgColor
     } else {
+      thumbnailView.layer?.backgroundColor = NSColor(white: 0.1, alpha: 0.8).cgColor
       largeIconView.image = windowInfo.appIcon
       largeIconView.imageScaling = .scaleProportionallyUpOrDown
       largeIconView.imageAlignment = .alignCenter

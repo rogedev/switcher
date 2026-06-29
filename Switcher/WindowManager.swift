@@ -37,12 +37,16 @@ class WindowManager {
     let myPID = ProcessInfo.processInfo.processIdentifier
 
     var axTitles: [CGWindowID: String] = [:]
+    var axWindowIDs = Set<CGWindowID>()
+    var axQueriedPIDs = Set<pid_t>()
     var minimized: [(windowID: CGWindowID, title: String, app: NSRunningApplication)] = []
     for app in apps
     where app.activationPolicy == .regular && app.processIdentifier != myPID
       && !app.isTerminated
     {
-      collectAXWindows(for: app, titles: &axTitles, minimized: &minimized)
+      collectAXWindows(
+        for: app, titles: &axTitles, axWindowIDs: &axWindowIDs,
+        axQueriedPIDs: &axQueriedPIDs, minimized: &minimized)
     }
 
     var windows: [WindowInfo] = []
@@ -65,6 +69,10 @@ class WindowManager {
 
       let app = appsByPID[pid]
       guard app?.activationPolicy == .regular else { continue }
+
+      if axQueriedPIDs.contains(pid) && !axWindowIDs.contains(windowID) {
+        continue
+      }
 
       let bx = (boundsDict?["X"] as? NSNumber)?.doubleValue ?? 0
       let by = (boundsDict?["Y"] as? NSNumber)?.doubleValue ?? 0
@@ -123,6 +131,8 @@ class WindowManager {
   private func collectAXWindows(
     for app: NSRunningApplication,
     titles: inout [CGWindowID: String],
+    axWindowIDs: inout Set<CGWindowID>,
+    axQueriedPIDs: inout Set<pid_t>,
     minimized: inout [(windowID: CGWindowID, title: String, app: NSRunningApplication)]
   ) {
     let appElement = AXUIElementCreateApplication(app.processIdentifier)
@@ -137,11 +147,24 @@ class WindowManager {
       return
     }
 
+    axQueriedPIDs.insert(app.processIdentifier)
+
     for axWindow in axWindows {
       var windowID: CGWindowID = 0
       guard _AXUIElementGetWindow(axWindow, &windowID) == .success, windowID != 0 else {
         continue
       }
+
+      // Only standard windows belong in the switcher.
+      var subroleRef: CFTypeRef?
+      AXUIElementCopyAttributeValue(axWindow, kAXSubroleAttribute as CFString, &subroleRef)
+      if let subrole = subroleRef as? String,
+        subrole != (kAXStandardWindowSubrole as String)
+      {
+        continue
+      }
+
+      axWindowIDs.insert(windowID)
 
       var titleRef: CFTypeRef?
       AXUIElementCopyAttributeValue(axWindow, kAXTitleAttribute as CFString, &titleRef)

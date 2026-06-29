@@ -151,6 +151,15 @@ class WindowManager {
         continue
       }
 
+      // Only standard windows belong in the switcher.
+      var subroleRef: CFTypeRef?
+      AXUIElementCopyAttributeValue(axWindow, kAXSubroleAttribute as CFString, &subroleRef)
+      if let subrole = subroleRef as? String,
+        subrole != (kAXStandardWindowSubrole as String)
+      {
+        continue
+      }
+
       axWindowIDs.insert(windowID)
 
       var titleRef: CFTypeRef?

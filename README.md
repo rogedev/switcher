@@ -2,6 +2,11 @@
 
 A free, open-source window switcher for macOS.
 
+![Switcher in action — Window Previews mode showing live thumbnails of open windows](docs/screenshot.png)
+
+Hold **⌥ Tab** to bring up a grid of your open windows with live previews, tap Tab to cycle,
+and release to switch.
+
 ## Installation
 
 1. Download the latest release from [Releases](https://github.com/rogedev/switcher/releases)
